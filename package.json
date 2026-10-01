@@ -1,0 +1,15 @@
+{
+  "name": "transfermarkt",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser extension for manual EA FC transfer-market searches and bids.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "clean": "node scripts/clean.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EAFC Transfermarkt</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup-shell">
+      <h1>Activity Log</h1>
+      <label for="last-status">Last Status</label>
+      <output id="last-status" aria-live="polite">Waiting for activity...</output>
+      <section class="listing-prices" aria-labelledby="listing-prices-title">
+        <h2 id="listing-prices-title">Transfer List Prices</h2>
+        <label class="toggle-label" for="auto-list-toggle">
+          <input id="auto-list-toggle" type="checkbox" checked>
+          Auto-list bought players
+        </label>
+        <div class="listing-prices-grid">
+          <div>
+            <label for="listing-min-bid">Min Bid</label>
+            <input id="listing-min-bid" type="number" min="0" step="1" value="750">
+          </div>
+          <div>
+            <label for="listing-buy-now">Buy Now Price</label>
+            <input id="listing-buy-now" type="number" min="0" step="1" value="800">
+          </div>
+        </div>
+      </section>
+      <section class="statistics" aria-labelledby="statistics-title">
+        <h2 id="statistics-title">Statistics</h2>
+        <div class="statistics-grid">
+          <div class="statistic">
+            <label for="fetch-count">Fetches</label>
+            <output id="fetch-count">0</output>
+          </div>
+          <div class="statistic">
+            <label for="players-found">Players Found</label>
+            <output id="players-found">0</output>
+          </div>
+          <div class="statistic">
+            <label for="players-bought">Players Bought</label>
+            <output id="players-bought">0</output>
+          </div>
+          <div class="statistic">
+            <label for="average-bought-price">Average Bought Price</label>
+            <output id="average-bought-price">none</output>
+          </div>
+        </div>
+      </section>
+      <label class="log-label" for="activity-log">Activities</label>
+      <textarea id="activity-log" rows="8" readonly wrap="off" aria-live="polite" placeholder="Waiting for activity..."></textarea>
+      <button id="fetch-button" type="button">Fetch and bid</button>
+      <button id="reset-button" type="button">Reset statistics</button>
+      <p id="fetch-state" aria-live="polite">Ready</p>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

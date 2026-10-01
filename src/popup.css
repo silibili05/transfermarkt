@@ -1,0 +1,173 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  color: #172033;
+  background: #f5f7fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 600px;
+  margin: 0;
+}
+
+.popup-shell {
+  padding: 16px;
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: 16px;
+}
+
+.listing-prices h2,
+.statistics h2 {
+  margin: 14px 0 10px;
+  font-size: 13px;
+}
+
+.listing-prices-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.toggle-label input {
+  margin: 0;
+}
+
+.statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.statistics output {
+  min-height: 36px;
+  margin-bottom: 0;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+output {
+  display: block;
+  min-height: 36px;
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+}
+
+output[data-state="success"] {
+  color: #15803d;
+}
+
+output[data-state="error"] {
+  color: #b91c1c;
+}
+
+input[type="number"] {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  margin-bottom: 8px;
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  color: #172033;
+  background: #fff;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+}
+
+input[type="number"]:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+.log-label {
+  margin-top: 14px;
+}
+
+textarea {
+  display: block;
+  width: 100%;
+  min-height: 128px;
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  color: #172033;
+  background: #fff;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+  resize: vertical;
+}
+
+textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+button {
+  width: 100%;
+  margin-top: 14px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  background: #2563eb;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+#reset-button {
+  background: #64748b;
+}
+
+#reset-button:hover {
+  background: #475569;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+#fetch-state {
+  margin: 8px 0 0;
+  color: #15803d;
+  font-size: 11px;
+}
+
+#fetch-state[data-state="paused"] {
+  color: #b45309;
+}

@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "EAFC Transfermarkt",
+  "version": "0.1.0",
+  "description": "Fetches EA FC transfer-market listings and bids on button press.",
+  "host_permissions": [
+    "https://utas.mob.v1.prd.futc-ext.gcp.ea.com/*",
+    "https://www.ea.com/*"
+  ],
+  "permissions": [
+    "storage",
+    "webRequest"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "EAFC Transfermarkt",
+    "default_popup": "popup.html"
+  }
+}
