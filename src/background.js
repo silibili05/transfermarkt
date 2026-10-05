@@ -9,6 +9,7 @@ let listingPrices = {
   buyNowPrice: 800
 };
 let autoListEnabled = true;
+let credits = null;
 
 function notifyPopup(message) {
   chrome.runtime.sendMessage(
@@ -30,6 +31,10 @@ const fetcher = createFetcher({
   onStateChange: () => notifyPopup({ type: "fetch-state", ...getState() }),
   setStatus: (status) => {
     lastStatus = status;
+  },
+  setCredits: (value) => {
+    credits = value;
+    void chrome.storage.local.set({ credits }).catch(() => {});
   }
 });
 
@@ -49,6 +54,7 @@ async function loadState() {
       searchUrl: null,
       listingPrices,
       autoListEnabled,
+      credits: null,
       utSid: null
     });
 
@@ -67,6 +73,10 @@ async function loadState() {
     }
     if (typeof stored.autoListEnabled === "boolean") {
       autoListEnabled = stored.autoListEnabled;
+    }
+    const storedCredits = Number(stored.credits);
+    if (Number.isFinite(storedCredits) && stored.credits !== null) {
+      credits = storedCredits;
     }
     if (!utSid && typeof stored.utSid === "string" && stored.utSid) {
       utSid = stored.utSid;
@@ -113,7 +123,8 @@ function getState() {
     logs: logger.getEntries(),
     statistics,
     listingPrices,
-    autoListEnabled
+    autoListEnabled,
+    credits
   };
 }
 

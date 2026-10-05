@@ -11,7 +11,8 @@ export function createFetcher({
   getAutoListEnabled = () => true,
   logger,
   onStateChange,
-  setStatus
+  setStatus,
+  setCredits = () => {}
 }) {
   let requestInFlight = false;
   let intervalId = null;
@@ -56,12 +57,16 @@ export function createFetcher({
     }
   }
 
-  function parseItemId(body) {
+  function parseBidResponse(body) {
     try {
       const data = JSON.parse(body);
-      return data?.itemData?.id ?? data?.auctionInfo?.[0]?.itemData?.id ?? null;
+      const credits = Number(data?.credits);
+      return {
+        credits: data?.credits != null && Number.isFinite(credits) ? credits : null,
+        playerId: data?.itemData?.id ?? data?.auctionInfo?.[0]?.itemData?.id ?? null
+      };
     } catch {
-      return null;
+      return { credits: null, playerId: null };
     }
   }
 
@@ -143,6 +148,7 @@ export function createFetcher({
       tradeId,
       bid: buyNowPrice
     });
+    const bidData = parseBidResponse(body);
     if (!response.ok) {
       logger.activity("bid-error", {
         status: response.status,
@@ -152,7 +158,8 @@ export function createFetcher({
     }
     return {
       status: response.status,
-      playerId: parseItemId(body)
+      credits: bidData.credits,
+      playerId: bidData.playerId
     };
   }
 
@@ -167,6 +174,7 @@ export function createFetcher({
     let playersBought = 0;
     let bidPrices = [];
     let boughtPrices = [];
+    let credits = null;
     let minb = null;
     let maxb = null;
     onStateChange();
@@ -220,6 +228,10 @@ export function createFetcher({
         if (bidResult.status >= 200 && bidResult.status < 300) {
           playersBought = 1;
           boughtPrices = [buyNowPrice];
+          credits = bidResult.credits;
+          if (credits !== null) {
+            setCredits(credits);
+          }
 
           const boughtPlayerId = bidResult.playerId ?? playerId;
           if (getAutoListEnabled() && boughtPlayerId != null) {
@@ -244,7 +256,8 @@ export function createFetcher({
         foundPrices,
         playersBought,
         bidPrices,
-        boughtPrices
+        boughtPrices,
+        credits
       });
       onStateChange();
     }

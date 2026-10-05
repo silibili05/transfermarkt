@@ -169,8 +169,9 @@ export function formatLogEntry(entry) {
   if (activity === "fetch-summary") {
     const foundPrices = entry.foundPrices?.length ? entry.foundPrices.join(", ") : "none";
     const bidPrices = entry.bidPrices?.length ? entry.bidPrices.join(", ") : "none";
+    const credits = entry.credits ?? "none";
 
-    return `${entry.time}  minb=${entry.minb ?? "none"} maxb=${entry.maxb ?? "none"} | Found: ${entry.playersFound} players (prices: ${foundPrices}) | Bought: ${entry.playersBought} players (bid: ${bidPrices})`;
+    return `${entry.time}  minb=${entry.minb ?? "none"} maxb=${entry.maxb ?? "none"} | Found: ${entry.playersFound} players (prices: ${foundPrices}) | Bought: ${entry.playersBought} players (bid: ${bidPrices}) | Credits: ${credits}`;
   }
 
   if (Number.isInteger(entry.auctionInfoLength)) {

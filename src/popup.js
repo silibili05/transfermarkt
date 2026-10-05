@@ -8,6 +8,7 @@ const fetchCountField = document.querySelector("#fetch-count");
 const playersFoundField = document.querySelector("#players-found");
 const playersBoughtField = document.querySelector("#players-bought");
 const averageBoughtPriceField = document.querySelector("#average-bought-price");
+const currentCoinsField = document.querySelector("#current-coins");
 const logField = document.querySelector("#activity-log");
 const fetchButton = document.querySelector("#fetch-button");
 const resetButton = document.querySelector("#reset-button");
@@ -45,6 +46,10 @@ function renderStatistics(statistics) {
     : "none";
 }
 
+function renderCurrentCoins(value) {
+  currentCoinsField.textContent = Number.isFinite(value) ? String(value) : "none";
+}
+
 function renderListingPrices(prices) {
   if (Number.isFinite(prices?.minBid)) {
     listingMinBidField.value = String(prices.minBid);
@@ -63,6 +68,7 @@ function applyState(state) {
   autoListToggle.checked = state?.autoListEnabled !== false;
   renderListingPrices(state?.listingPrices);
   renderStatistics(state?.statistics);
+  renderCurrentCoins(state?.credits);
   renderLog(state?.logs);
 
   if (state?.status !== null && state?.status !== undefined) {
