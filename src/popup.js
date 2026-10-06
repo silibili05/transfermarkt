@@ -7,8 +7,9 @@ const listingBuyNowField = document.querySelector("#listing-buy-now");
 const fetchCountField = document.querySelector("#fetch-count");
 const playersFoundField = document.querySelector("#players-found");
 const playersBoughtField = document.querySelector("#players-bought");
-const averageBoughtPriceField = document.querySelector("#average-bought-price");
 const currentCoinsField = document.querySelector("#current-coins");
+const sessionProfitField = document.querySelector("#session-profit");
+const lastResetField = document.querySelector("#last-reset");
 const logField = document.querySelector("#activity-log");
 const fetchButton = document.querySelector("#fetch-button");
 const resetButton = document.querySelector("#reset-button");
@@ -41,9 +42,16 @@ function renderStatistics(statistics) {
   fetchCountField.textContent = String(statistics?.fetches ?? 0);
   playersFoundField.textContent = String(statistics?.playersFound ?? 0);
   playersBoughtField.textContent = String(statistics?.playersBought ?? 0);
-  averageBoughtPriceField.textContent = Number.isFinite(statistics?.averageBoughtPrice)
-    ? String(Math.round(statistics.averageBoughtPrice))
-    : "none";
+  sessionProfitField.textContent = Number.isFinite(statistics?.sessionProfit)
+    ? String(Number(statistics.sessionProfit.toFixed(2)))
+    : "0";
+
+  const lastResetAt = typeof statistics?.lastResetAt === "string"
+    ? new Date(statistics.lastResetAt)
+    : null;
+  lastResetField.textContent = lastResetAt && !Number.isNaN(lastResetAt.getTime())
+    ? lastResetAt.toLocaleString("de-DE")
+    : "Never";
 }
 
 function renderCurrentCoins(value) {

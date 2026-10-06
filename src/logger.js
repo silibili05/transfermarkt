@@ -6,8 +6,8 @@ function createEmptyStatistics() {
     fetches: 0,
     playersFound: 0,
     playersBought: 0,
-    boughtPriceTotal: 0,
-    boughtPriceCount: 0
+    sessionProfit: 0,
+    lastResetAt: null
   };
 }
 
@@ -16,30 +16,11 @@ function toFiniteNumber(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
-function getBoughtPrices(entry) {
-  const playersBought = toFiniteNumber(entry?.playersBought);
-
-  if (Array.isArray(entry?.boughtPrices)) {
-    return entry.boughtPrices;
-  }
-
-  return playersBought > 0 && Array.isArray(entry?.bidPrices)
-    ? entry.bidPrices.slice(0, playersBought)
-    : [];
-}
-
 function addEntryToStatistics(statistics, entry) {
   statistics.fetches += 1;
   statistics.playersFound += toFiniteNumber(entry?.playersFound);
   statistics.playersBought += toFiniteNumber(entry?.playersBought);
-
-  for (const price of getBoughtPrices(entry)) {
-    const numericPrice = Number(price);
-    if (Number.isFinite(numericPrice)) {
-      statistics.boughtPriceTotal += numericPrice;
-      statistics.boughtPriceCount += 1;
-    }
-  }
+  statistics.sessionProfit += toFiniteNumber(entry?.sessionProfit);
 }
 
 function calculateStatistics(entries) {
@@ -66,8 +47,7 @@ export function createLogger({ notify }) {
     }
 
     const fallback = calculateStatistics(entries);
-    const boughtPriceCount = Number(storedStatistics.boughtPriceCount);
-    const boughtPriceTotal = Number(storedStatistics.boughtPriceTotal);
+    const sessionProfit = Number(storedStatistics.sessionProfit);
 
     statistics = {
       fetches: Number.isFinite(Number(storedStatistics.fetches))
@@ -79,12 +59,12 @@ export function createLogger({ notify }) {
       playersBought: Number.isFinite(Number(storedStatistics.playersBought))
         ? Number(storedStatistics.playersBought)
         : fallback.playersBought,
-      boughtPriceTotal: Number.isFinite(boughtPriceTotal)
-        ? boughtPriceTotal
-        : fallback.boughtPriceTotal,
-      boughtPriceCount: Number.isFinite(boughtPriceCount)
-        ? boughtPriceCount
-        : fallback.boughtPriceCount
+      sessionProfit: Number.isFinite(sessionProfit)
+        ? sessionProfit
+        : fallback.sessionProfit,
+      lastResetAt: typeof storedStatistics.lastResetAt === "string"
+        ? storedStatistics.lastResetAt
+        : fallback.lastResetAt
     };
   }
 
@@ -97,15 +77,17 @@ export function createLogger({ notify }) {
       fetches: statistics.fetches,
       playersFound: statistics.playersFound,
       playersBought: statistics.playersBought,
-      averageBoughtPrice: statistics.boughtPriceCount > 0
-        ? statistics.boughtPriceTotal / statistics.boughtPriceCount
-        : null
+      sessionProfit: statistics.sessionProfit,
+      lastResetAt: statistics.lastResetAt
     };
   }
 
   function resetStatistics() {
     entries = [];
-    statistics = createEmptyStatistics();
+    statistics = {
+      ...createEmptyStatistics(),
+      lastResetAt: new Date().toISOString()
+    };
     void chrome.storage.local.set({
       [STORAGE_KEY]: entries,
       [STATISTICS_KEY]: statistics

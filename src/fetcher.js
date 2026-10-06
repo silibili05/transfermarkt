@@ -174,6 +174,7 @@ export function createFetcher({
     let playersBought = 0;
     let bidPrices = [];
     let boughtPrices = [];
+    let sessionProfit = 0;
     let credits = null;
     let minb = null;
     let maxb = null;
@@ -208,8 +209,9 @@ export function createFetcher({
         .map((auction) => auction?.buyNowPrice)
         .filter((price) => price != null);
 
-      if (!searchResponse.ok) {
+      if (searchResponse.status !== 200) {
         logger.activity("player-search-error", { status: searchResponse.status });
+        stopFetching();
         return;
       }
 
@@ -228,6 +230,11 @@ export function createFetcher({
         if (bidResult.status >= 200 && bidResult.status < 300) {
           playersBought = 1;
           boughtPrices = [buyNowPrice];
+          const listingBuyNowPrice = Number(getListingPrices()?.buyNowPrice);
+          const boughtPrice = Number(buyNowPrice);
+          if (Number.isFinite(listingBuyNowPrice) && Number.isFinite(boughtPrice)) {
+            sessionProfit = listingBuyNowPrice * 0.95 - boughtPrice;
+          }
           credits = bidResult.credits;
           if (credits !== null) {
             setCredits(credits);
@@ -257,6 +264,7 @@ export function createFetcher({
         playersBought,
         bidPrices,
         boughtPrices,
+        sessionProfit,
         credits
       });
       onStateChange();
