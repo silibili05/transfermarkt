@@ -36,7 +36,9 @@ export function createLogger({ notify }) {
 
   function setEntries(storedEntries) {
     entries = Array.isArray(storedEntries)
-      ? storedEntries.filter((entry) => entry?.activity === "fetch-summary")
+      ? storedEntries.filter((entry) => (
+        entry?.activity === "fetch-summary" && toFiniteNumber(entry.playersBought) > 0
+      ))
       : [];
     statistics = calculateStatistics(entries);
   }
@@ -101,15 +103,20 @@ export function createLogger({ notify }) {
     };
 
     entries.push(completeEntry);
-    if (completeEntry.activity === "fetch-summary") {
-      addEntryToStatistics(statistics, completeEntry);
-    }
     void chrome.storage.local.set({
       [STORAGE_KEY]: entries,
       [STATISTICS_KEY]: statistics
     }).catch(() => {});
     notify(completeEntry);
     return completeEntry;
+  }
+
+  function recordFetch(details = {}) {
+    addEntryToStatistics(statistics, details);
+    void chrome.storage.local.set({
+      [STORAGE_KEY]: entries,
+      [STATISTICS_KEY]: statistics
+    }).catch(() => {});
   }
 
   function activity(name, details = {}) {
@@ -137,6 +144,7 @@ export function createLogger({ notify }) {
     fetchSummary,
     getEntries,
     getStatistics,
+    recordFetch,
     resetStatistics,
     searchResult,
     setEntries,
@@ -149,11 +157,14 @@ export function formatLogEntry(entry) {
   const status = typeof entry.status === "number" ? `HTTP ${entry.status}` : entry.status;
 
   if (activity === "fetch-summary") {
-    const foundPrices = entry.foundPrices?.length ? entry.foundPrices.join(", ") : "none";
-    const bidPrices = entry.bidPrices?.length ? entry.bidPrices.join(", ") : "none";
-    const credits = entry.credits ?? "none";
+    const boughtPrice = entry.boughtPrice ?? entry.boughtPrices?.[0];
+    const buyMaxPrice = entry.buyMaxPrice ?? entry.maxb;
+    const salePrice = entry.salePrice ?? (
+      buyMaxPrice == null ? null : Number(buyMaxPrice) * 0.95
+    );
+    const profit = entry.profit ?? entry.sessionProfit;
 
-    return `${entry.time}  minb=${entry.minb ?? "none"} maxb=${entry.maxb ?? "none"} | Found: ${entry.playersFound} players (prices: ${foundPrices}) | Bought: ${entry.playersBought} players (bid: ${bidPrices}) | Credits: ${credits}`;
+    return `${entry.time} #${entry.playerId ?? "?"} | buy ${formatCoinAmount(boughtPrice)} | max ${formatCoinAmount(buyMaxPrice)} | sell ${formatCoinAmount(salePrice)} | profit ${formatProfit(profit)}`;
   }
 
   if (Number.isInteger(entry.auctionInfoLength)) {
@@ -188,4 +199,18 @@ export function formatLogEntry(entry) {
     `Headers:\n${headers || "(none)"}`,
     `Body:\n${entry.body}`
   ].filter(Boolean).join("\n");
+}
+
+function formatCoinAmount(value) {
+  if (value === null || value === undefined || value === "") {
+    return "none";
+  }
+
+  const number = Number(value);
+  return Number.isFinite(number) ? String(Number(number.toFixed(2))) : "none";
+}
+
+function formatProfit(value) {
+  const amount = formatCoinAmount(value);
+  return amount === "none" || Number(value) < 0 ? amount : `+${amount}`;
 }

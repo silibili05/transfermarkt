@@ -76,14 +76,6 @@ output {
   font-size: 13px;
 }
 
-output[data-state="success"] {
-  color: #15803d;
-}
-
-output[data-state="error"] {
-  color: #b91c1c;
-}
-
 input[type="number"] {
   display: block;
   width: 100%;

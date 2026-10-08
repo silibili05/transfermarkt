@@ -1,9 +1,9 @@
 import { formatLogEntry } from "./logger.js";
 
-const statusField = document.querySelector("#last-status");
 const autoListToggle = document.querySelector("#auto-list-toggle");
 const listingMinBidField = document.querySelector("#listing-min-bid");
 const listingBuyNowField = document.querySelector("#listing-buy-now");
+const searchPriceField = document.querySelector("#search-price");
 const fetchIntervalField = document.querySelector("#fetch-interval");
 const fetchCountField = document.querySelector("#fetch-count");
 const playersFoundField = document.querySelector("#players-found");
@@ -15,19 +15,6 @@ const logField = document.querySelector("#activity-log");
 const fetchButton = document.querySelector("#fetch-button");
 const resetButton = document.querySelector("#reset-button");
 const fetchState = document.querySelector("#fetch-state");
-
-function showStatus(status) {
-  if (typeof status === "number") {
-    statusField.textContent = `HTTP ${status}`;
-    statusField.dataset.state = status >= 200 && status < 300 ? "success" : "error";
-    return;
-  }
-
-  statusField.textContent = status || "Waiting for activity...";
-  statusField.dataset.state = typeof status === "string" && status.endsWith("failed")
-    ? "error"
-    : "pending";
-}
 
 function renderLog(entries) {
   logField.value = Array.isArray(entries) ? entries.map(formatLogEntry).join("\n") : "";
@@ -74,6 +61,12 @@ function renderFetchInterval(seconds) {
   }
 }
 
+function renderSearchPrice(price) {
+  if (Number.isFinite(price) && price >= 0) {
+    searchPriceField.value = String(price);
+  }
+}
+
 function applyState(state) {
   const running = state?.running === true;
   fetchButton.textContent = running ? "Stop" : "Fetch and bid";
@@ -82,21 +75,15 @@ function applyState(state) {
   fetchState.dataset.state = running ? "active" : "paused";
   autoListToggle.checked = state?.autoListEnabled !== false;
   renderListingPrices(state?.listingPrices);
+  renderSearchPrice(state?.searchPrice);
   renderFetchInterval(state?.fetchIntervalSeconds);
   renderStatistics(state?.statistics);
   renderCurrentCoins(state?.credits);
   renderLog(state?.logs);
-
-  if (state?.status !== null && state?.status !== undefined) {
-    showStatus(state.status);
-  }
 }
 
 chrome.runtime.onMessage.addListener((message) => {
   if (message?.type === "log-entry") {
-    if (message.entry?.status !== undefined) {
-      showStatus(message.entry.status);
-    }
     appendLog(message.entry);
   }
 
@@ -141,6 +128,19 @@ function saveListingPrices() {
 
 listingMinBidField.addEventListener("change", saveListingPrices);
 listingBuyNowField.addEventListener("change", saveListingPrices);
+
+searchPriceField.addEventListener("change", () => {
+  chrome.runtime.sendMessage({
+    type: "set-search-price",
+    price: Number(searchPriceField.value)
+  }, (state) => {
+    if (chrome.runtime.lastError) {
+      return;
+    }
+
+    applyState(state);
+  });
+});
 
 fetchIntervalField.addEventListener("change", () => {
   chrome.runtime.sendMessage({

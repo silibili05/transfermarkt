@@ -1,11 +1,9 @@
 export const API_URL_PATTERN = "https://utas.mob.v1.prd.futc-ext.gcp.ea.com/*";
 
 export const DEFAULT_FETCH_INTERVAL_SECONDS = 2;
+export const DEFAULT_SEARCH_PRICE = 0;
 export const MIN_FETCH_INTERVAL_SECONDS = 0.5;
 export const MAX_FETCH_INTERVAL_SECONDS = 50000;
-
-const MIN_BID_INCREMENT = 50;
-const MIN_BID_RESET = 1000;
 
 export function normalizeFetchIntervalSeconds(value) {
   const seconds = Number(value);
@@ -20,22 +18,25 @@ export function normalizeFetchIntervalSeconds(value) {
   return seconds;
 }
 
+export function normalizeSearchPrice(value) {
+  const price = Number(value);
+  return Number.isFinite(price) && price >= 0 ? price : null;
+}
+
 export function createFetcher({
   getSessionId,
   getSearchUrl,
+  getSearchPrice = () => DEFAULT_SEARCH_PRICE,
   getListingPrices = () => ({ minBid: 750, buyNowPrice: 800 }),
   getAutoListEnabled = () => true,
   getFetchIntervalSeconds = () => DEFAULT_FETCH_INTERVAL_SECONDS,
   logger,
   onStateChange,
-  setStatus,
   setCredits = () => {}
 }) {
   let requestInFlight = false;
   let running = false;
   let timeoutId = null;
-  let capturedSearchUrl = null;
-  let minBid = null;
 
   function buildHeaders(withJsonBody = false) {
     return {
@@ -52,16 +53,8 @@ export function createFetcher({
     }
 
     const url = new URL(currentSearchUrl);
-    if (currentSearchUrl !== capturedSearchUrl) {
-      capturedSearchUrl = currentSearchUrl;
-      minBid = Number(url.searchParams.get("minb")) || 0;
-    }
-
-    url.searchParams.set("minb", String(minBid));
-    minBid += MIN_BID_INCREMENT;
-    if (minBid >= MIN_BID_RESET) {
-      minBid = 0;
-    }
+    const searchPrice = normalizeSearchPrice(getSearchPrice()) ?? 0;
+    url.searchParams.set("minb", String(searchPrice));
 
     return url;
   }
@@ -143,8 +136,6 @@ export function createFetcher({
         bid: buyNowPrice
       });
     }
-
-    return response.status;
   }
 
   async function bidOnTrade(tradeId, buyNowPrice, apiOrigin) {
@@ -188,44 +179,34 @@ export function createFetcher({
 
     requestInFlight = true;
     let playersFound = 0;
-    let foundPrices = [];
     let playersBought = 0;
-    let bidPrices = [];
-    let boughtPrices = [];
     let sessionProfit = 0;
     let credits = null;
-    let minb = null;
-    let maxb = null;
+    let purchaseLog = null;
     onStateChange();
 
     try {
       if (!getSessionId()) {
-        setStatus("Waiting for X-Ut-Sid");
         logger.activity("session-wait", { status: "Waiting for X-Ut-Sid" });
         return;
       }
 
       const searchUrl = buildSearchUrl();
       if (!searchUrl) {
-        setStatus("Waiting for transfer-market search");
         return;
       }
 
-      minb = searchUrl.searchParams.get("minb");
-      maxb = searchUrl.searchParams.get("maxb");
+      const rawBuyMaxPrice = searchUrl.searchParams.get("maxb");
+      const buyMaxPrice = rawBuyMaxPrice === null ? null : Number(rawBuyMaxPrice);
       logger.activity("player-search-request", { url: searchUrl.toString() });
       const searchResponse = await fetch(searchUrl, {
         cache: "no-store",
         headers: buildHeaders()
       });
       const searchBody = await searchResponse.text();
-      setStatus(searchResponse.status);
 
       const auctionInfo = parseAuctionInfo(searchBody);
       playersFound = auctionInfo.length;
-      foundPrices = auctionInfo
-        .map((auction) => auction?.buyNowPrice)
-        .filter((price) => price != null);
 
       if (searchResponse.status !== 200) {
         logger.activity("player-search-error", { status: searchResponse.status });
@@ -241,50 +222,51 @@ export function createFetcher({
         return;
       }
 
-      bidPrices = [buyNowPrice];
       try {
         const bidResult = await bidOnTrade(tradeId, buyNowPrice, searchUrl.origin);
-        setStatus(bidResult.status);
         if (bidResult.status >= 200 && bidResult.status < 300) {
           playersBought = 1;
-          boughtPrices = [buyNowPrice];
-          const listingBuyNowPrice = Number(getListingPrices()?.buyNowPrice);
           const boughtPrice = Number(buyNowPrice);
-          if (Number.isFinite(listingBuyNowPrice) && Number.isFinite(boughtPrice)) {
-            sessionProfit = listingBuyNowPrice * 0.95 - boughtPrice;
-          }
+          const netSalePrice = Number.isFinite(buyMaxPrice) ? buyMaxPrice * 0.95 : null;
+          const profit = Number.isFinite(netSalePrice) && Number.isFinite(boughtPrice)
+            ? netSalePrice - boughtPrice
+            : null;
+          sessionProfit = profit ?? 0;
           credits = bidResult.credits;
           if (credits !== null) {
             setCredits(credits);
           }
 
           const boughtPlayerId = bidResult.playerId ?? playerId;
+          purchaseLog = {
+            playersBought,
+            playerId: boughtPlayerId,
+            boughtPrice,
+            buyMaxPrice: Number.isFinite(buyMaxPrice) ? buyMaxPrice : null,
+            salePrice: netSalePrice,
+            profit,
+            credits
+          };
           if (getAutoListEnabled() && boughtPlayerId != null) {
             try {
-              setStatus(await setToTransferList(boughtPlayerId, searchUrl.origin));
-            } catch (error) {
-              setStatus("Transfer list failed");
+              await setToTransferList(boughtPlayerId, searchUrl.origin);
+            } catch {
             }
           }
         }
-      } catch (error) {
-        setStatus("Bid failed");
+      } catch {
       }
-    } catch (error) {
-      setStatus("Search failed");
+    } catch {
     } finally {
       requestInFlight = false;
-      logger.fetchSummary({
-        minb,
-        maxb,
+      logger.recordFetch({
         playersFound,
-        foundPrices,
         playersBought,
-        bidPrices,
-        boughtPrices,
-        sessionProfit,
-        credits
+        sessionProfit
       });
+      if (purchaseLog) {
+        logger.fetchSummary(purchaseLog);
+      }
       onStateChange();
     }
   }

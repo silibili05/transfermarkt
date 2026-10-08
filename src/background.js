@@ -2,13 +2,15 @@ import {
   createFetcher,
   API_URL_PATTERN,
   DEFAULT_FETCH_INTERVAL_SECONDS,
-  normalizeFetchIntervalSeconds
+  DEFAULT_SEARCH_PRICE,
+  normalizeFetchIntervalSeconds,
+  normalizeSearchPrice
 } from "./fetcher.js";
 import { createLogger } from "./logger.js";
 
-let lastStatus = null;
 let utSid = null;
 let searchUrl = null;
+let searchPrice = DEFAULT_SEARCH_PRICE;
 let listingPrices = {
   minBid: 750,
   buyNowPrice: 800
@@ -31,14 +33,12 @@ const logger = createLogger({
 const fetcher = createFetcher({
   getSessionId: () => utSid,
   getSearchUrl: () => searchUrl,
+  getSearchPrice: () => searchPrice,
   getListingPrices: () => listingPrices,
   getAutoListEnabled: () => autoListEnabled,
   getFetchIntervalSeconds: () => fetchIntervalSeconds,
   logger,
   onStateChange: () => notifyPopup({ type: "fetch-state", ...getState() }),
-  setStatus: (status) => {
-    lastStatus = status;
-  },
   setCredits: (value) => {
     credits = value;
     void chrome.storage.local.set({ credits }).catch(() => {});
@@ -59,6 +59,7 @@ async function loadState() {
       responseLog: [],
       statistics: null,
       searchUrl: null,
+      searchPrice,
       listingPrices,
       autoListEnabled,
       fetchIntervalSeconds,
@@ -70,6 +71,10 @@ async function loadState() {
     logger.setStatistics(stored.statistics);
     if (!searchUrl && typeof stored.searchUrl === "string" && stored.searchUrl) {
       searchUrl = stored.searchUrl;
+    }
+    const storedSearchPrice = normalizeSearchPrice(stored.searchPrice);
+    if (storedSearchPrice !== null) {
+      searchPrice = storedSearchPrice;
     }
     if (stored.listingPrices && typeof stored.listingPrices === "object") {
       const minBid = Number(stored.listingPrices.minBid);
@@ -93,11 +98,6 @@ async function loadState() {
     if (!utSid && typeof stored.utSid === "string" && stored.utSid) {
       utSid = stored.utSid;
     }
-
-    const entries = logger.getEntries();
-    lastStatus = entries.length > 0
-      ? entries[entries.length - 1].status ?? null
-      : null;
   } catch {
     logger.setEntries([]);
   }
@@ -131,9 +131,9 @@ function getState() {
 
   return {
     running: fetcher.isRunning(),
-    status: lastStatus,
     logs: logger.getEntries(),
     statistics,
+    searchPrice,
     listingPrices,
     autoListEnabled,
     fetchIntervalSeconds,
@@ -142,7 +142,7 @@ function getState() {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!["get-state", "toggle-fetching", "reset-statistics", "set-listing-prices", "set-auto-listing", "set-fetch-interval"].includes(message?.type)) {
+  if (!["get-state", "toggle-fetching", "reset-statistics", "set-search-price", "set-listing-prices", "set-auto-listing", "set-fetch-interval"].includes(message?.type)) {
     return;
   }
 
@@ -157,6 +157,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.type === "reset-statistics") {
       logger.resetStatistics();
+    }
+
+    if (message.type === "set-search-price") {
+      const nextSearchPrice = normalizeSearchPrice(message.price);
+      if (nextSearchPrice !== null) {
+        searchPrice = nextSearchPrice;
+        void chrome.storage.local.set({ searchPrice }).catch(() => {});
+      }
     }
 
     if (message.type === "set-listing-prices") {
