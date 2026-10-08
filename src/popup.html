@@ -34,40 +34,46 @@
           </div>
         </div>
       </section>
-      <section class="statistics" aria-labelledby="statistics-title">
-        <h2 id="statistics-title">Statistics</h2>
-        <div class="statistics-grid">
-          <div class="statistic">
-            <label for="fetch-count">Fetches</label>
-            <output id="fetch-count">0</output>
+      <div class="dashboard">
+        <section class="statistics" aria-labelledby="statistics-title">
+          <h2 id="statistics-title">Statistics</h2>
+          <div class="statistics-grid">
+            <div class="statistic">
+              <label for="fetch-count">Fetches</label>
+              <output id="fetch-count">0</output>
+            </div>
+            <div class="statistic">
+              <label for="players-found">Players Found</label>
+              <output id="players-found">0</output>
+            </div>
+            <div class="statistic">
+              <label for="players-bought">Players Bought</label>
+              <output id="players-bought">0</output>
+            </div>
+            <div class="statistic">
+              <label for="current-coins">Current Coins</label>
+              <output id="current-coins">none</output>
+            </div>
+            <div class="statistic">
+              <label for="session-profit">Session Profit</label>
+              <output id="session-profit">0</output>
+            </div>
+            <div class="statistic">
+              <label for="last-reset">Last Reset</label>
+              <output id="last-reset">Never</output>
+            </div>
           </div>
-          <div class="statistic">
-            <label for="players-found">Players Found</label>
-            <output id="players-found">0</output>
+        </section>
+        <section class="activity-panel" aria-labelledby="activity-title">
+          <h2 id="activity-title">Activities</h2>
+          <textarea id="activity-log" rows="8" readonly wrap="off" aria-live="polite" aria-label="Activities" placeholder="Waiting for activity..."></textarea>
+          <div class="activity-actions">
+            <button id="fetch-button" type="button">Fetch and bid</button>
+            <button id="reset-button" type="button">Reset statistics</button>
           </div>
-          <div class="statistic">
-            <label for="players-bought">Players Bought</label>
-            <output id="players-bought">0</output>
-          </div>
-          <div class="statistic">
-            <label for="current-coins">Current Coins</label>
-            <output id="current-coins">none</output>
-          </div>
-          <div class="statistic">
-            <label for="session-profit">Session Profit</label>
-            <output id="session-profit">0</output>
-          </div>
-          <div class="statistic">
-            <label for="last-reset">Last Reset</label>
-            <output id="last-reset">Never</output>
-          </div>
-        </div>
-      </section>
-      <label class="log-label" for="activity-log">Activities</label>
-      <textarea id="activity-log" rows="8" readonly wrap="off" aria-live="polite" placeholder="Waiting for activity..."></textarea>
-      <button id="fetch-button" type="button">Fetch and bid</button>
-      <button id="reset-button" type="button">Reset statistics</button>
-      <p id="fetch-state" aria-live="polite">Ready</p>
+          <p id="fetch-state" aria-live="polite">Ready</p>
+        </section>
+      </div>
     </main>
 
     <script type="module" src="popup.js"></script>

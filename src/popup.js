@@ -38,7 +38,11 @@ function renderStatistics(statistics) {
     ? new Date(statistics.lastResetAt)
     : null;
   lastResetField.textContent = lastResetAt && !Number.isNaN(lastResetAt.getTime())
-    ? lastResetAt.toLocaleString("de-DE")
+    ? lastResetAt.toLocaleTimeString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    })
     : "Never";
 }
 

@@ -24,7 +24,8 @@ h1 {
 }
 
 .listing-prices h2,
-.statistics h2 {
+.statistics h2,
+.activity-panel h2 {
   margin: 14px 0 10px;
   font-size: 13px;
 }
@@ -46,15 +47,24 @@ h1 {
   margin: 0;
 }
 
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
 .statistics-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .statistics output {
-  min-height: 36px;
+  min-height: 30px;
+  padding: 6px 7px;
   margin-bottom: 0;
+  font-size: 12px;
 }
 
 label {
@@ -96,10 +106,6 @@ input[type="number"]:focus {
   box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
 }
 
-.log-label {
-  margin-top: 14px;
-}
-
 textarea {
   display: block;
   width: 100%;
@@ -116,6 +122,21 @@ textarea {
   white-space: pre;
   overflow-x: auto;
   resize: vertical;
+}
+
+.activity-panel {
+  min-width: 0;
+}
+
+.activity-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.activity-actions button {
+  margin-top: 0;
 }
 
 textarea:focus {

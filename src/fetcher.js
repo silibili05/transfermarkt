@@ -182,7 +182,6 @@ export function createFetcher({
     let playersBought = 0;
     let sessionProfit = 0;
     let credits = null;
-    let purchaseLog = null;
     onStateChange();
 
     try {
@@ -207,6 +206,7 @@ export function createFetcher({
 
       const auctionInfo = parseAuctionInfo(searchBody);
       playersFound = auctionInfo.length;
+      logger.searchResult(playersFound);
 
       if (searchResponse.status !== 200) {
         logger.activity("player-search-error", { status: searchResponse.status });
@@ -238,15 +238,6 @@ export function createFetcher({
           }
 
           const boughtPlayerId = bidResult.playerId ?? playerId;
-          purchaseLog = {
-            playersBought,
-            playerId: boughtPlayerId,
-            boughtPrice,
-            buyMaxPrice: Number.isFinite(buyMaxPrice) ? buyMaxPrice : null,
-            salePrice: netSalePrice,
-            profit,
-            credits
-          };
           if (getAutoListEnabled() && boughtPlayerId != null) {
             try {
               await setToTransferList(boughtPlayerId, searchUrl.origin);
@@ -264,9 +255,6 @@ export function createFetcher({
         playersBought,
         sessionProfit
       });
-      if (purchaseLog) {
-        logger.fetchSummary(purchaseLog);
-      }
       onStateChange();
     }
   }

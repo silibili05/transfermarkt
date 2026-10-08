@@ -36,9 +36,7 @@ export function createLogger({ notify }) {
 
   function setEntries(storedEntries) {
     entries = Array.isArray(storedEntries)
-      ? storedEntries.filter((entry) => (
-        entry?.activity === "fetch-summary" && toFiniteNumber(entry.playersBought) > 0
-      ))
+      ? storedEntries.filter((entry) => entry?.activity === "search-result")
       : [];
     statistics = calculateStatistics(entries);
   }
@@ -123,25 +121,20 @@ export function createLogger({ notify }) {
     return null;
   }
 
-  function searchResult(status, auctionInfoLength) {
-    return null;
+  function searchResult(playersFound) {
+    return record({
+      activity: "search-result",
+      playersFound
+    });
   }
 
   function bidResponse(response, body, details = {}) {
     return null;
   }
 
-  function fetchSummary(details = {}) {
-    return record({
-      activity: "fetch-summary",
-      ...details
-    });
-  }
-
   return {
     activity,
     bidResponse,
-    fetchSummary,
     getEntries,
     getStatistics,
     recordFetch,
@@ -156,19 +149,8 @@ export function formatLogEntry(entry) {
   const activity = entry.activity || entry.requestType;
   const status = typeof entry.status === "number" ? `HTTP ${entry.status}` : entry.status;
 
-  if (activity === "fetch-summary") {
-    const boughtPrice = entry.boughtPrice ?? entry.boughtPrices?.[0];
-    const buyMaxPrice = entry.buyMaxPrice ?? entry.maxb;
-    const salePrice = entry.salePrice ?? (
-      buyMaxPrice == null ? null : Number(buyMaxPrice) * 0.95
-    );
-    const profit = entry.profit ?? entry.sessionProfit;
-
-    return `${entry.time} #${entry.playerId ?? "?"} | buy ${formatCoinAmount(boughtPrice)} | max ${formatCoinAmount(buyMaxPrice)} | sell ${formatCoinAmount(salePrice)} | profit ${formatProfit(profit)}`;
-  }
-
-  if (Number.isInteger(entry.auctionInfoLength)) {
-    return `${entry.time}  auctionInfo.length: ${entry.auctionInfoLength}`;
+  if (activity === "search-result" || Number.isInteger(entry.auctionInfoLength)) {
+    return `found ${entry.playersFound ?? entry.auctionInfoLength} players`;
   }
 
   if (activity && typeof entry.body !== "string") {
@@ -199,18 +181,4 @@ export function formatLogEntry(entry) {
     `Headers:\n${headers || "(none)"}`,
     `Body:\n${entry.body}`
   ].filter(Boolean).join("\n");
-}
-
-function formatCoinAmount(value) {
-  if (value === null || value === undefined || value === "") {
-    return "none";
-  }
-
-  const number = Number(value);
-  return Number.isFinite(number) ? String(Number(number.toFixed(2))) : "none";
-}
-
-function formatProfit(value) {
-  const amount = formatCoinAmount(value);
-  return amount === "none" || Number(value) < 0 ? amount : `+${amount}`;
 }
