@@ -1,21 +1,39 @@
 export const API_URL_PATTERN = "https://utas.mob.v1.prd.futc-ext.gcp.ea.com/*";
 
-const FETCH_INTERVAL_MS = 2000;
+export const DEFAULT_FETCH_INTERVAL_SECONDS = 2;
+export const MIN_FETCH_INTERVAL_SECONDS = 0.5;
+export const MAX_FETCH_INTERVAL_SECONDS = 50000;
+
 const MIN_BID_INCREMENT = 50;
 const MIN_BID_RESET = 1000;
+
+export function normalizeFetchIntervalSeconds(value) {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds)) {
+    return null;
+  }
+
+  if (seconds < MIN_FETCH_INTERVAL_SECONDS || seconds > MAX_FETCH_INTERVAL_SECONDS) {
+    return null;
+  }
+
+  return seconds;
+}
 
 export function createFetcher({
   getSessionId,
   getSearchUrl,
   getListingPrices = () => ({ minBid: 750, buyNowPrice: 800 }),
   getAutoListEnabled = () => true,
+  getFetchIntervalSeconds = () => DEFAULT_FETCH_INTERVAL_SECONDS,
   logger,
   onStateChange,
   setStatus,
   setCredits = () => {}
 }) {
   let requestInFlight = false;
-  let intervalId = null;
+  let running = false;
+  let timeoutId = null;
   let capturedSearchUrl = null;
   let minBid = null;
 
@@ -271,25 +289,42 @@ export function createFetcher({
     }
   }
 
-  function startFetching() {
-    if (intervalId !== null) {
+  function currentIntervalMs() {
+    const seconds = normalizeFetchIntervalSeconds(getFetchIntervalSeconds());
+    return (seconds ?? DEFAULT_FETCH_INTERVAL_SECONDS) * 1000;
+  }
+
+  function scheduleNextFetch() {
+    if (!running) {
       return;
     }
 
-    intervalId = setInterval(() => {
-      void fetchAndBid();
-    }, FETCH_INTERVAL_MS);
+    timeoutId = setTimeout(() => {
+      timeoutId = null;
+      void fetchAndBid().finally(scheduleNextFetch);
+    }, currentIntervalMs());
+  }
+
+  function startFetching() {
+    if (running) {
+      return;
+    }
+
+    running = true;
     onStateChange();
-    void fetchAndBid();
+    void fetchAndBid().finally(scheduleNextFetch);
   }
 
   function stopFetching() {
-    if (intervalId === null) {
+    if (!running) {
       return;
     }
 
-    clearInterval(intervalId);
-    intervalId = null;
+    running = false;
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
     onStateChange();
   }
 
@@ -297,6 +332,6 @@ export function createFetcher({
     fetchAndBid,
     startFetching,
     stopFetching,
-    isRunning: () => intervalId !== null
+    isRunning: () => running
   };
 }

@@ -1,4 +1,9 @@
-import { createFetcher, API_URL_PATTERN } from "./fetcher.js";
+import {
+  createFetcher,
+  API_URL_PATTERN,
+  DEFAULT_FETCH_INTERVAL_SECONDS,
+  normalizeFetchIntervalSeconds
+} from "./fetcher.js";
 import { createLogger } from "./logger.js";
 
 let lastStatus = null;
@@ -9,6 +14,7 @@ let listingPrices = {
   buyNowPrice: 800
 };
 let autoListEnabled = true;
+let fetchIntervalSeconds = DEFAULT_FETCH_INTERVAL_SECONDS;
 let credits = null;
 
 function notifyPopup(message) {
@@ -27,6 +33,7 @@ const fetcher = createFetcher({
   getSearchUrl: () => searchUrl,
   getListingPrices: () => listingPrices,
   getAutoListEnabled: () => autoListEnabled,
+  getFetchIntervalSeconds: () => fetchIntervalSeconds,
   logger,
   onStateChange: () => notifyPopup({ type: "fetch-state", ...getState() }),
   setStatus: (status) => {
@@ -54,6 +61,7 @@ async function loadState() {
       searchUrl: null,
       listingPrices,
       autoListEnabled,
+      fetchIntervalSeconds,
       credits: null,
       utSid: null
     });
@@ -73,6 +81,10 @@ async function loadState() {
     }
     if (typeof stored.autoListEnabled === "boolean") {
       autoListEnabled = stored.autoListEnabled;
+    }
+    const storedInterval = normalizeFetchIntervalSeconds(stored.fetchIntervalSeconds);
+    if (storedInterval !== null) {
+      fetchIntervalSeconds = storedInterval;
     }
     const storedCredits = Number(stored.credits);
     if (Number.isFinite(storedCredits) && stored.credits !== null) {
@@ -124,12 +136,13 @@ function getState() {
     statistics,
     listingPrices,
     autoListEnabled,
+    fetchIntervalSeconds,
     credits
   };
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!["get-state", "toggle-fetching", "reset-statistics", "set-listing-prices", "set-auto-listing"].includes(message?.type)) {
+  if (!["get-state", "toggle-fetching", "reset-statistics", "set-listing-prices", "set-auto-listing", "set-fetch-interval"].includes(message?.type)) {
     return;
   }
 
@@ -159,6 +172,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "set-auto-listing" && typeof message.enabled === "boolean") {
       autoListEnabled = message.enabled;
       void chrome.storage.local.set({ autoListEnabled }).catch(() => {});
+    }
+
+    if (message.type === "set-fetch-interval") {
+      const seconds = normalizeFetchIntervalSeconds(message.seconds);
+      if (seconds !== null) {
+        fetchIntervalSeconds = seconds;
+        void chrome.storage.local.set({ fetchIntervalSeconds }).catch(() => {});
+      }
     }
 
     sendResponse(getState());

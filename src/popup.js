@@ -4,6 +4,7 @@ const statusField = document.querySelector("#last-status");
 const autoListToggle = document.querySelector("#auto-list-toggle");
 const listingMinBidField = document.querySelector("#listing-min-bid");
 const listingBuyNowField = document.querySelector("#listing-buy-now");
+const fetchIntervalField = document.querySelector("#fetch-interval");
 const fetchCountField = document.querySelector("#fetch-count");
 const playersFoundField = document.querySelector("#players-found");
 const playersBoughtField = document.querySelector("#players-bought");
@@ -67,6 +68,12 @@ function renderListingPrices(prices) {
   }
 }
 
+function renderFetchInterval(seconds) {
+  if (Number.isFinite(seconds) && seconds > 0) {
+    fetchIntervalField.value = String(seconds);
+  }
+}
+
 function applyState(state) {
   const running = state?.running === true;
   fetchButton.textContent = running ? "Stop" : "Fetch and bid";
@@ -75,6 +82,7 @@ function applyState(state) {
   fetchState.dataset.state = running ? "active" : "paused";
   autoListToggle.checked = state?.autoListEnabled !== false;
   renderListingPrices(state?.listingPrices);
+  renderFetchInterval(state?.fetchIntervalSeconds);
   renderStatistics(state?.statistics);
   renderCurrentCoins(state?.credits);
   renderLog(state?.logs);
@@ -133,6 +141,19 @@ function saveListingPrices() {
 
 listingMinBidField.addEventListener("change", saveListingPrices);
 listingBuyNowField.addEventListener("change", saveListingPrices);
+
+fetchIntervalField.addEventListener("change", () => {
+  chrome.runtime.sendMessage({
+    type: "set-fetch-interval",
+    seconds: Number(fetchIntervalField.value)
+  }, (state) => {
+    if (chrome.runtime.lastError) {
+      return;
+    }
+
+    applyState(state);
+  });
+});
 
 autoListToggle.addEventListener("change", () => {
   chrome.runtime.sendMessage({
